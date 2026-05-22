@@ -119,7 +119,7 @@ export default function Cart() {
         createdAt: new Date().toISOString()
       };
       
-      const order = await axios.post("http://localhost:5004/api/order/create", orderData);
+      const order = await axios.post("https://westware-backend.vercel.app/api/order/create-order", orderData);
       if (order.data.success) {
         toast.success("Order placed successfully!");
         clearCart();

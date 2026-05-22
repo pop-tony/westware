@@ -101,7 +101,7 @@ const ConsultationCard = () => {
   const creatOrder = async()=>{
     if(!paymentSuccess) return;
     try {
-      const consult = await axios.post("http://localhost:5004/api/order/consult", {formData});
+      const consult = await axios.post("https://westware-backend.vercel.app/api/order/consult", {formData});
       if(consult.data.success){
         toast.success("Consultation successfully booked!")
       }
