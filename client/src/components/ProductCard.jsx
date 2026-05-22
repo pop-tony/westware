@@ -25,7 +25,7 @@ export default function ProductCard({ image, name, price, tag, category, onSelec
       <div className="p-4 text-zinc-900 dark:text-white">
         <p className="text-xs uppercase text-zinc-500 dark:text-zinc-400">{category}</p>
         <h3 className="mt-1 text-lg font-medium">{name}</h3>
-        <p className="mt-1 text-lg font-semibold text-rose-500">${price}</p>
+        <p className="mt-1 text-lg font-semibold text-rose-500">GHS{price}</p>
       </div>
     </motion.div>
   );

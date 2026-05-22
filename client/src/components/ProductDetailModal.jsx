@@ -1,8 +1,12 @@
 // src/components/ProductDetailModal.jsx
-import { motion, AnimatePresence } from 'framer-motion';
+import { useCart } from '../context/CartContext';
+import { toast } from 'sonner';
 import { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export default function ProductDetailModal({ product, isOpen, onClose, onBook }) {
+export default function ProductDetailModal({ product, isOpen, onClose }) {
+  const { addToCart } = useCart();
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -13,6 +17,12 @@ export default function ProductDetailModal({ product, isOpen, onClose, onBook })
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    toast.success(`${product.name} added to cart!`);
+    onClose();
+  };
 
   if (!product) return null;
 
@@ -26,7 +36,7 @@ export default function ProductDetailModal({ product, isOpen, onClose, onBook })
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
           />
 
           {/* Modal Container - centered with padding for mobile */}
@@ -60,7 +70,7 @@ export default function ProductDetailModal({ product, isOpen, onClose, onBook })
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 z-10 rounded-full bg-black/50 p-2 text-white backdrop-blur transition hover:bg-black/70 dark:bg-white/20"
+                className="cursor-pointer absolute right-4 top-4 z-10 rounded-full bg-black/50 p-2 text-white backdrop-blur transition hover:bg-black/70 dark:bg-white/20"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -155,24 +165,13 @@ export default function ProductDetailModal({ product, isOpen, onClose, onBook })
                       className="space-y-3 pt-4"
                     >
                       <button
-                        onClick={() => {
-                          onBook(product);
-                          onClose();
-                        }}
-                        className="w-full rounded-full bg-zinc-900 py-4 font-bold text-white transition hover:bg-rose-500 dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white"
+                        type="button"
+                        onClick={handleAddToCart}
+                        className="w-full rounded-full bg-zinc-900 py-4 font-bold text-white transition hover:bg-rose-500 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white"
                       >
                         Add to Cart
                       </button>
-                      <button
-                        onClick={() => {
-                          onBook(product);
-                          document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' });
-                          onClose();
-                        }}
-                        className="w-full rounded-full border-2 border-zinc-900 py-4 font-bold text-zinc-900 transition hover:bg-zinc-900 hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black"
-                      >
-                        Book Styling Session
-                      </button>
+                      
                     </motion.div>
                   </div>
                 </div>

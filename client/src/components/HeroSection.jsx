@@ -20,8 +20,8 @@ export default function HeroSection() {
           <a href="#collections" className="rounded-full bg-rose-500 px-8 py-3 font-semibold text-white transition hover:bg-rose-400">
             Shop Collection
           </a>
-          <a href="#book" className="rounded-full border border-white px-8 py-3 font-semibold transition hover:bg-white hover:text-black">
-            Book Stylist
+          <a href="#consultation" className="rounded-full border border-white px-8 py-3 font-semibold transition hover:bg-white hover:text-black">
+            Book Consultation
           </a>
         </div>
       </div>

@@ -1,0 +1,55 @@
+{
+  "hash": "ac486f42",
+  "configHash": "cb3e0fa2",
+  "lockfileHash": "7bad41ae",
+  "browserHash": "e1bac2ed",
+  "optimized": {
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "3b3fda81",
+      "needsInterop": false
+    },
+    "framer-motion": {
+      "src": "../../node_modules/framer-motion/dist/es/index.mjs",
+      "file": "framer-motion.js",
+      "fileHash": "f9b9c8ad",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.mjs",
+      "file": "lucide-react.js",
+      "fileHash": "012f15dc",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "117de90e",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "f2574e92",
+      "needsInterop": true
+    },
+    "sonner": {
+      "src": "../../node_modules/sonner/dist/index.mjs",
+      "file": "sonner.js",
+      "fileHash": "789b5a2e",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-2QVXPHXC": {
+      "file": "chunk-2QVXPHXC.js"
+    },
+    "chunk-6NHEQG5J": {
+      "file": "chunk-6NHEQG5J.js"
+    },
+    "chunk-PR4QN5HX": {
+      "file": "chunk-PR4QN5HX.js"
+    }
+  }
+}
