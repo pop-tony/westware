@@ -1,4 +1,4 @@
-// src/components/Cart.jsx
+import React from 'react'
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, ShoppingBag, Trash2, CreditCard, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -26,9 +26,17 @@ export default function Cart() {
     address: ''
   });
   const [orderRef, setOrderRef] = useState('');
+  const [selectedItem, setSelectedItem] = useState(null); // track single item checkout
+  const [checkoutLoading, setCheckoutLoading] = useState(null);
 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
+    setSelectedItem(null); // full cart checkout
+    setCheckoutStep('checkout');
+  };
+
+  const handleSingleItemCheckout = (item) => {
+    setSelectedItem(item); // set item for single checkout
     setCheckoutStep('checkout');
   };
 
@@ -48,39 +56,51 @@ export default function Cart() {
 
   const payWithPaystack = (e) => {
     e.preventDefault();
-    
-    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
+
+    if (!customerInfo.name ||!customerInfo.email ||!customerInfo.phone) {
       toast.error('Please fill all required fields');
       return;
     }
-  
+
     if (typeof window.PaystackPop === 'undefined') {
       toast.error('Payment service not loaded. Please refresh.');
       return;
     }
-  
+
+    // If selectedItem exists, checkout single item. Else checkout full cart
+    const itemsToCheckout = selectedItem? [selectedItem] : cartItems;
+    const amountToPay = selectedItem
+     ? selectedItem.price * selectedItem.quantity
+      : cartTotal;
+
+    const itemLabel = selectedItem? selectedItem.cartItemId : 'all';
+    setCheckoutLoading(itemLabel);
+
     const handlePaymentSuccess = async (response) => {
       try {
         toast.success(`Payment complete! Ref: ${response.reference}`);
         setOrderRef(response.reference);
-        await createOrder(response.reference);
+        await createOrder(response.reference, itemsToCheckout);
         setCheckoutStep('success');
       } catch (err) {
         toast.error('Payment succeeded but order save failed');
         console.error(err);
+      } finally {
+        setCheckoutLoading(null);
       }
     };
-  
+
     const handlePaymentClose = () => {
       toast.info('Payment window closed');
+      setCheckoutLoading(null);
     };
-  
+
     const handler = window.PaystackPop.setup({
       key: key,
       email: customerInfo.email,
-      amount: Math.round(cartTotal * 100),
+      amount: Math.round(amountToPay * 100),
       currency: 'GHS',
-      ref: `AURA_${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
+      ref: `AURA_${selectedItem? 'SINGLE' : 'CART'}_${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
       metadata: {
         custom_fields: [
           {
@@ -91,43 +111,46 @@ export default function Cart() {
           {
             display_name: "Items",
             variable_name: "items",
-            value: cartItems.map(i => `${i.name} x${i.quantity}`).join(', ')
+            value: itemsToCheckout.map(i => `${i.name} x${i.quantity}`).join(', ')
           }
         ]
       },
-      callback: ()=>handlePaymentSuccess,
+      callback: (response)=>handlePaymentSuccess(response),
       onClose: handlePaymentClose,
     });
-    
+
     handler.openIframe();
   };
-  
-  const createOrder = async (reference) => {
+
+  const createOrder = async (reference, items) => {
     try {
       const orderData = {
         customer: customerInfo,
-        items: cartItems.map(item => ({
+        items: items.map(item => ({
           id: item.id,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
           category: item.category
         })),
-        total: cartTotal,
+        total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         paymentRef: reference,
         status: 'paid',
         createdAt: new Date().toISOString()
       };
-      
-      const order = await axios.post("https://westware-backend.vercel.app/api/order/create-order", orderData);
+
+      const order = await axios.post("http://localhost:5004/api/order/create-order", orderData);
       if (order.data.success) {
         toast.success("Order placed successfully!");
-        clearCart();
+        // Remove only paid items
+        items.forEach(item => removeFromCart(item.cartItemId));
+        setSelectedItem(null);
       }
     } catch (error) {
       toast.error("Order saved locally. Contact support with ref: " + reference);
       console.log(error);
-      clearCart();
+      items.forEach(item => removeFromCart(item.cartItemId));
+      setSelectedItem(null);
     }
   };
 
@@ -136,6 +159,7 @@ export default function Cart() {
     setTimeout(() => {
       setCheckoutStep('cart');
       setCustomerInfo({ name: '', email: '', phone: '', address: '' });
+      setSelectedItem(null);
     }, 300);
   };
 
@@ -161,10 +185,13 @@ export default function Cart() {
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b border-zinc-200 p-6 dark:border-zinc-800">
                 <div className="flex items-center gap-3">
-                  {checkoutStep !== 'cart' && checkoutStep !== 'success' && (
+                  {checkoutStep!== 'cart' && checkoutStep!== 'success' && (
                     <button
                       type="button"
-                      onClick={() => setCheckoutStep('cart')}
+                      onClick={() => {
+                        setCheckoutStep('cart');
+                        setSelectedItem(null);
+                      }}
                       className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
                     >
                       <ArrowLeft className="h-5 w-5" />
@@ -173,7 +200,7 @@ export default function Cart() {
                   <ShoppingBag className="h-6 w-6 text-zinc-900 dark:text-white" />
                   <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                     {checkoutStep === 'cart' && `Cart (${cartCount})`}
-                    {checkoutStep === 'checkout' && 'Checkout'}
+                    {checkoutStep === 'checkout' && (selectedItem? 'Checkout Item' : 'Checkout')}
                     {checkoutStep === 'success' && 'Order Confirmed'}
                   </h2>
                 </div>
@@ -208,49 +235,77 @@ export default function Cart() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, x: -100 }}
-                            className="flex gap-4 rounded-2xl bg-zinc-50 p-4 dark:bg-zinc-800/50"
+                            className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-800/50"
                           >
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="h-20 w-20 rounded-xl object-cover"
-                            />
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-zinc-900 dark:text-white">
-                                {item.name}
-                              </h3>
-                              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                                {item.category}
-                              </p>
-                              <p className="mt-1 font-bold text-rose-500">GHS{item.price}</p>
+                            <div className="flex gap-4">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="h-20 w-20 rounded-xl object-cover"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <h3 className="font-semibold text-zinc-900 dark:text-white">
+                                      {item.name}
+                                    </h3>
+                                    <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                                      {item.category}
+                                    </p>
+                                    <p className="mt-1 font-bold text-rose-500">GHS{item.price}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFromCart(item.cartItemId)}
+                                    className="text-zinc-400 transition hover:text-rose-500"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
 
-                              <div className="mt-3 flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => handleQuantityChange(item.cartItemId, -1)}
-                                  className="rounded-lg bg-zinc-200 p-1.5 text-zinc-900 hover:bg-zinc-300 active:scale-95 dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-600"
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </button>
-                                <span className="w-10 text-center font-semibold text-zinc-900 dark:text-white">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleQuantityChange(item.cartItemId, 1)}
-                                  className="rounded-lg bg-zinc-200 p-1.5 text-zinc-900 hover:bg-zinc-300 active:scale-95 dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-600"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => removeFromCart(item.cartItemId)}
-                                  className="ml-auto rounded-lg p-1.5 text-rose-500 hover:bg-rose-500/10"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                <div className="mt-3 flex items-center justify-between">
+                                  <div className="flex items-center gap-2 rounded-lg bg-zinc-100 dark:bg-zinc-700">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuantityChange(item.cartItemId, -1)}
+                                      className="p-1.5 text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </button>
+                                    <span className="w-8 text-center text-sm font-semibold text-zinc-900 dark:text-white">
+                                      {item.quantity}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleQuantityChange(item.cartItemId, 1)}
+                                      className="p-1.5 text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                  <span className="font-bold text-zinc-900 dark:text-white">
+                                    GHS{(item.price * item.quantity).toFixed(2)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+
+                            {/* Individual Checkout Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleSingleItemCheckout(item)}
+                              disabled={checkoutLoading === item.cartItemId}
+                              className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-500 active:scale-95 disabled:opacity-50 dark:bg-white dark:text-black"
+                            >
+                              {checkoutLoading === item.cartItemId? (
+                                'Processing...'
+                              ) : (
+                                <>
+                                  <CreditCard className="h-4 w-4" />
+                                  Checkout This Item
+                                </>
+                              )}
+                            </button>
                           </motion.div>
                         ))}
                       </div>
@@ -268,7 +323,7 @@ export default function Cart() {
                         onClick={handleCheckout}
                         className="w-full rounded-full bg-zinc-900 py-4 font-semibold text-white transition hover:bg-rose-500 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white"
                       >
-                        Proceed to Checkout
+                        Checkout All Items
                       </button>
                     </div>
                   )}
@@ -336,20 +391,20 @@ export default function Cart() {
 
                       <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 dark:border-white/10 dark:bg-zinc-800/50">
                         <h4 className="mb-3 font-semibold text-zinc-900 dark:text-white">Order Summary</h4>
-                        {cartItems.map(item => (
+                        {(selectedItem? [selectedItem] : cartItems).map(item => (
                           <div key={item.cartItemId} className="mb-2 flex justify-between text-sm">
                             <span className="text-zinc-600 dark:text-zinc-400">
                               {item.name} x{item.quantity}
                             </span>
                             <span className="font-medium text-zinc-900 dark:text-white">
-                              ${(parseFloat(item.price) * item.quantity).toFixed(2)}
+                              GHS{(parseFloat(item.price) * item.quantity).toFixed(2)}
                             </span>
                           </div>
                         ))}
                         <div className="mt-3 border-t border-zinc-300 pt-3 dark:border-zinc-700">
                           <div className="flex justify-between font-bold text-zinc-900 dark:text-white">
                             <span>Total</span>
-                            <span>${cartTotal.toFixed(2)}</span>
+                            <span>GHS{selectedItem? (selectedItem.price * selectedItem.quantity).toFixed(2) : cartTotal.toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
@@ -369,9 +424,10 @@ export default function Cart() {
                     <button
                       type="button"
                       onClick={payWithPaystack}
-                      className="w-full rounded-full bg-zinc-900 py-4 font-semibold text-white transition hover:bg-rose-500 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white"
+                      disabled={checkoutLoading!== null}
+                      className="w-full rounded-full bg-zinc-900 py-4 font-semibold text-white transition hover:bg-rose-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white"
                     >
-                      Pay GHS {(cartTotal).toFixed(2)} with Paystack
+                      {checkoutLoading? 'Processing...' : `Pay GHS ${selectedItem? (selectedItem.price * selectedItem.quantity).toFixed(2) : cartTotal.toFixed(2)} with Paystack`}
                     </button>
                   </div>
                 </>

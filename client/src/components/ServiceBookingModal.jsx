@@ -98,7 +98,7 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
     if(!paymentSuccess) return;
     
     try {
-      const consult = await axios.post("https://westware-backend.vercel.app/api/order/create-orderA", {formData});
+      const consult = await axios.post("http://localhost:5004/api/order/create-orderA", {formData});
       if(consult.data.success){
         toast.success("Service successfully booked!")
       }
