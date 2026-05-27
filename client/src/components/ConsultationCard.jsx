@@ -70,6 +70,7 @@ const ConsultationCard = () => {
   }
 
   const key = import.meta.env.VITE_PAYSTACK_LIVE_PUBLIC_KEY
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const payWithPaystack = async (e) => {
     e.preventDefault()
@@ -101,7 +102,7 @@ const ConsultationCard = () => {
   const creatOrder = async()=>{
     if(!paymentSuccess) return;
     try {
-      const consult = await axios.post("http://localhost:5004/api/order/consult", {formData});
+      const consult = await axios.post(`${backendUrl}/api/order/consult`, {formData});
       if(consult.data.success){
         toast.success("Consultation successfully booked!")
       }
