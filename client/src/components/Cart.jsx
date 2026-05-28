@@ -174,7 +174,7 @@ export default function Cart() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeCart}
-            className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm p-5"
           />
 
           <motion.div
@@ -182,7 +182,7 @@ export default function Cart() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 z-[90] h-full w-full bg-white shadow-2xl dark:bg-zinc-900 sm:w-"
+            className="fixed right-0 top-0 z-[90] p-5 h-full w-full bg-white shadow-2xl dark:bg-zinc-900 sm:w-"
           >
             <div className="flex h-full flex-col">
               <div className="flex items-center justify-between border-b border-zinc-200 p-6 dark:border-zinc-800">
@@ -334,7 +334,7 @@ export default function Cart() {
 
               {checkoutStep === 'checkout' && (
                 <>
-                  <div className="flex-1 overflow-y-auto p-6">
+                  <div className="relative flex-1 overflow-y-auto p-10">
                     <form onSubmit={payWithPaystack} className="space-y-4">
                       <div>
                         <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
