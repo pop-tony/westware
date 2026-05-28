@@ -15,8 +15,8 @@ const ConsultationCard = () => {
     phone: '',
     date: '',
   })
-
-  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [orderRef, setOrderRef] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const details = [
     {
@@ -57,7 +57,10 @@ const ConsultationCard = () => {
 
   const closeModal = () => {
     setIsModalOpen(false)
-    setTimeout(() => setStep('details'), 300)
+    setTimeout(() => {
+      setStep('details')
+      setOrderRef('')
+    }, 300)
   }
 
   const handleDetailsSubmit = (e) => {
@@ -72,55 +75,105 @@ const ConsultationCard = () => {
   const key = import.meta.env.VITE_PAYSTACK_LIVE_PUBLIC_KEY
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  const payWithPaystack = async (e) => {
+  const createOrder = async (reference) => {
+    try {
+      const orderData = {
+        customer: formData,
+        items: [{
+          id: 'consultation',
+          name: 'Style Consultation',
+          price: 800,
+          quantity: 1,
+          category: 'Service'
+        }],
+        total: 800,
+        paymentRef: reference,
+        status: 'paid',
+        type: 'consultation',
+        createdAt: new Date().toISOString()
+      };
+
+      const res = await axios.post(`${backendUrl}/api/order/consult`, {orderData});
+      if (res.data.success) {
+        toast.success("Consultation booked successfully!")
+        return true
+      } else {
+        throw new Error(res.data.message || 'Order creation failed')
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("Payment succeeded but booking failed. Contact support with ref: " + reference)
+      return false
+    }
+  };
+
+  const payWithPaystack = (e) => {
     e.preventDefault()
+
+    if (!formData.name ||!formData.email ||!formData.phone ||!formData.date) {
+      toast.error('Please fill all required fields')
+      return
+    }
+
     if (!window.PaystackPop) {
       toast.error('Payment service not loaded. Please refresh.')
       return
     }
-    try {
-      const handler = window.PaystackPop.setup({
-        key: key,
-        email: formData.email,
-        amount: 80000,
-        currency: 'GHS',
-        ref: `${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
-        onClose: () => toast.info('Payment window closed'),
-        callback: (response) => {
-          toast.success(`Payment complete! Ref: ${response.reference}`)
-          setStep('success')
-          setPaymentSuccess(true)
-        },
-      })
-      handler.openIframe()
-    } catch (error) {
-      console.error(error)
-      toast.error('Error processing payment')
-    }
-  }
 
-  const creatOrder = async()=>{
-    if(!paymentSuccess) return;
-    try {
-      const consult = await axios.post(`${backendUrl}/api/order/consult`, {formData});
-      if(consult.data.success){
-        toast.success("Consultation successfully booked!")
+    if (!key) {
+      toast.error('Payment key not configured')
+      return
+    }
+
+    const handlePaymentSuccess = async (response) => {
+      
+      try {
+        setOrderRef(response.reference)
+        await createOrder(response.reference)
+        toast.success(`Booked! Ref: ${response.reference}`);
+        setStep('success');
+        setIsProcessing(false)
+      } catch (err) {
+        toast.error('Payment succeeded but order save failed');
+        console.error(err);
       }
-    } catch (error) {
-      toast.error("Unable to book.. try again")
-      console.log(error)
     }
-    setPaymentSuccess(false);
-  }
 
-  const handlePaymentSubmit = async(e) => {
-    e.preventDefault()
-    await payWithPaystack(e)
-  }
+    setIsProcessing(true)
 
-  useEffect(()=>{
-    if(paymentSuccess) creatOrder();
-  },[paymentSuccess])
+    const handler = window.PaystackPop.setup({
+      key: key,
+      email: formData.email,
+      amount: 80000, // GHS 800 in pesewas
+      currency: 'GHS',
+      ref: `CONSULT_${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
+      metadata: {
+        custom_fields: [
+          {
+            display_name: "Customer Name",
+            variable_name: "customer_name",
+            value: formData.name
+          },
+          {
+            display_name: "Phone",
+            variable_name: "phone",
+            value: formData.phone
+          },
+          {
+            display_name: "Preferred Date",
+            variable_name: "date",
+            value: formData.date
+          }
+        ]
+      },
+      callback: (response) => handlePaymentSuccess(response),
+      onClose: () => {
+        toast.info('Payment cancelled')
+        setIsProcessing(false)
+      },
+    })
+    handler.openIframe()
+  }
 
   return (
     <>
@@ -181,7 +234,7 @@ const ConsultationCard = () => {
         </div>
       </motion.section>
 
-      {/* Modal - Matches your ProductDetailModal style */}
+      {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <>
@@ -275,6 +328,7 @@ const ConsultationCard = () => {
                             <input
                               type='date'
                               required
+                              min={new Date().toISOString().split('T')[0]}
                               value={formData.date}
                               onChange={(e) => updateField('date', e.target.value)}
                               className='w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 dark:border-white/10 dark:bg-zinc-800 dark:text-white dark:[color-scheme:dark]'
@@ -299,7 +353,8 @@ const ConsultationCard = () => {
                         <div className='flex items-center gap-3'>
                           <button
                             onClick={() => setStep('details')}
-                            className='-ml-2 rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white'
+                            disabled={isProcessing}
+                            className='-ml-2 rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white'
                           >
                             <ArrowLeft className='h-5 w-5' />
                           </button>
@@ -314,7 +369,8 @@ const ConsultationCard = () => {
                         </div>
                         <button
                           onClick={closeModal}
-                          className='-mr-2 -mt-2 rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white'
+                          disabled={isProcessing}
+                          className='-mr-2 -mt-2 rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white'
                         >
                           <X className='h-5 w-5' />
                         </button>
@@ -329,9 +385,13 @@ const ConsultationCard = () => {
                           <span className='text-zinc-600 dark:text-zinc-400'>For</span>
                           <span className='font-medium text-zinc-900 dark:text-white'>{formData.name}</span>
                         </div>
+                        <div className='mt-3 flex justify-between text-sm'>
+                          <span className='text-zinc-600 dark:text-zinc-400'>Date</span>
+                          <span className='font-medium text-zinc-900 dark:text-white'>{formData.date}</span>
+                        </div>
                       </div>
 
-                      <form onSubmit={handlePaymentSubmit} className='mt-6'>
+                      <div className='mt-6'>
                         <div className='rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-400/20 dark:bg-amber-500/10 dark:text-amber-200'>
                           <div className='flex gap-3'>
                             <CreditCard className='h-5 w-5 shrink-0' />
@@ -340,12 +400,14 @@ const ConsultationCard = () => {
                         </div>
 
                         <button
-                          type='submit'
-                          className='mt-6 w-full rounded-full bg-zinc-900 py-4 font-semibold text-white transition hover:bg-rose-500 hover:scale-[1.02] active:scale-[0.98] dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white'
+                          type='button'
+                          onClick={payWithPaystack}
+                          disabled={isProcessing}
+                          className='mt-6 w-full rounded-full bg-zinc-900 py-4 font-semibold text-white transition hover:bg-rose-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-black dark:hover:bg-rose-500 dark:hover:text-white'
                         >
-                          Pay GHS 800 with Paystack
+                          {isProcessing? 'Processing...' : 'Pay GHS 800 with Paystack'}
                         </button>
-                      </form>
+                      </div>
                     </div>
                   )}
 
@@ -365,8 +427,10 @@ const ConsultationCard = () => {
                         Booking Confirmed!
                       </h3>
                       <p className='mt-2 text-balance text-sm text-zinc-600 dark:text-zinc-400'>
-                        We’ve sent confirmation details to <span className='font-semibold text-zinc-900 dark:text-white'>{formData.email}</span>.
-                        Our team will reach out within 24 hours to finalize your session.
+                        Ref: <span className='font-semibold text-zinc-900 dark:text-white'>{orderRef}</span>
+                      </p>
+                      <p className='mt-4 text-sm text-zinc-600 dark:text-zinc-400'>
+                        We’ve sent confirmation to <span className='font-semibold text-zinc-900 dark:text-white'>{formData.email}</span>
                       </p>
 
                       <div className='mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-left text-sm dark:border-white/10 dark:bg-zinc-800/50'>

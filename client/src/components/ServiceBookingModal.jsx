@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowLeft, CheckCircle2, Calendar, User, Mail, Phone, Clock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 export default function ServiceBookingModal({ service, isOpen, onClose }) {
   const [step, setStep] = useState('details'); // 'details' | 'confirm' | 'success'

@@ -83,6 +83,7 @@ export default function Cart() {
         setOrderRef(response.reference);
         await createOrder(response.reference, itemsToCheckout);
         setCheckoutStep('success');
+        setCheckoutLoading(false);
       } catch (err) {
         toast.error('Payment succeeded but order save failed');
         console.error(err);
@@ -140,7 +141,7 @@ export default function Cart() {
         createdAt: new Date().toISOString()
       };
 
-      const order = await axios.post(`${backendUrl}/api/order/create-order`, orderData);
+      const order = await axios.post(`${backendUrl}/api/order/create-order`, {orderData});
       if (order.data.success) {
         toast.success("Order placed successfully!");
         // Remove only paid items
