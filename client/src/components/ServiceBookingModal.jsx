@@ -158,7 +158,7 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
                     onClick={(e) => e.stopPropagation()}
                     className='w-full max-w-lg'
                     >
-                        <div className='max-h- overflow-y-auto rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900'>
+                        <div className='max-h-[90vh] overflow-y-auto rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900'>
 
                             {/* Step 1: Details */}
                             {step === 'details' && (
@@ -202,7 +202,7 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
                                             <span>{service.duration}</span>
                                         </div>
                                         </div>
-
+                                        
                                         <form onSubmit={handleDetailsSubmit} className='mt-6 space-y-4'>
                                         <div>
                                             <label className='mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300'>

@@ -256,7 +256,7 @@ const ConsultationCard = () => {
                 onClick={(e) => e.stopPropagation()}
                 className='w-full max-w-lg p-5'
               >
-                <div className='p-10 max-h- overflow-y-auto rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900'>
+                <div className='max-h- overflow-y-auto rounded-3xl border border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900'>
 
                   {/* Step 1: Details */}
                   {step === 'details' && (
