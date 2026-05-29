@@ -53,7 +53,7 @@ export default function Cart() {
   };
 
   const key = import.meta.env.VITE_PAYSTACK_LIVE_PUBLIC_KEY;
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const backendUrl = import.meta.env.VITE_ENV === "development" ? import.meta.env.VITE_BACKEND_URL : "/api";
 
   const payWithPaystack = (e) => {
     e.preventDefault();
