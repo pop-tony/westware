@@ -138,10 +138,9 @@ export default function Cart() {
         total: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         paymentRef: reference,
         status: 'paid',
-        createdAt: new Date().toISOString()
       };
 
-      const order = await axios.post(`${backendUrl}/api/order/create-order`, {orderData});
+      const order = await axios.post(`${backendUrl}/order/create-order`, {orderData});
       if (order.data.success) {
         toast.success("Order placed successfully!");
         // Remove only paid items

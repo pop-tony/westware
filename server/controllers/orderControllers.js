@@ -1,22 +1,16 @@
 import consultModel from "../models/consultationModel.js";
 import orderAModel from "../models/orderAModel.js";
+import orderModel from "../models/orderModel.js";
 
 export const createOrderA = async (req, res) => {
   try {
-    const { formData } = req.body;
-    console.log(req.body)
-
-    //const { name, email, phone } = clientData;
-    //const { price } = selectedPackage;
-    //onst pname = selectedPackage.name;
-
+    const { name, email, phone, date, time, notes, serviceName, servicePrice } = req.body.formData;
+    const clientName = name;
     // Validate required fields
-    if (!formData) {
+    if (!clientName || !email || !phone || !date || !time || !serviceName || !servicePrice) {
       return res.status(400).json({ success: false, message: 'Missing Required Details' });
     }
-    return res.json({ success: true, message: "Consultation successfully booked" });
-
-    const order = new orderAModel({formData});
+    const order = new orderModel({ clientName, email, phone, date, time, notes, serviceName, servicePrice });
     await order.save();
 
     return res.json({ success: true, message: "Order successfully created" });
@@ -28,16 +22,13 @@ export const createOrderA = async (req, res) => {
 
 export const createConsult = async (req, res) => {
   try {
-    const { orderData } = req.body;
-
-    console.log(req.body)
+    const { name, email, phone, date } = req.body.orderData.customer;
 
     // Validate required fields
-    if (!orderData) {
+    if (!name || !email || !phone || !date) {
       return res.status(400).json({ success: false, message: 'Missing Required Details' });
     }
 
-    return res.json({ success: true, message: "Consultation successfully booked" });
     const consult = new consultModel({name, email, phone, date});
     await consult.save();
 
@@ -49,15 +40,19 @@ export const createConsult = async (req, res) => {
 }
 
 export const createOrder = async (req, res) => {
+
   try {
-    const { orderData } = req.body;
-    console.log(req.body)
+    const { customer, items, total, paymentRef, status } = req.body.orderData;
+    const { name, email, phone, address } = customer;
+    const { price, quantity } = items[0];
+    const customerName = name;
+    const itemName = items[0].name
     // Validate required fields
-    if (!orderData) {
+    if (!customerName || !email || !phone || !address || !itemName || !price || !quantity || !total || !paymentRef || !status) {
       return res.status(400).json({ success: false, message: 'Missing Required Details' });
     }
-    return res.json({ success: true, message: "Order successfully created" });
-    const order = new orderModel({ });
+    
+    const order = new orderAModel({ customerName, email, phone, address, itemName, price, quantity, total, paymentRef, status });
     await order.save();
 
     return res.json({ success: true, message: "Order successfully created" });

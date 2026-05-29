@@ -16,8 +16,6 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
     notes: '',
   });
 
-  const [paymentSuccess, setPaymentSuccess] = useState(false)
-
   // Prefill when service changes
   useEffect(() => {
     if (service) {
@@ -65,13 +63,25 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
   };
 
   const key = import.meta.env.VITE_PAYSTACK_LIVE_PUBLIC_KEY
-
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  
   const payWithPaystack = async (e) => {
     e.preventDefault()
     if (!window.PaystackPop) {
       toast.error('Payment service not loaded. Please refresh.')
       return
     }
+
+    const handlePaymentSuccess = async (response) => {
+        try {
+          toast.success(`Payment complete! Ref: ${response.reference}`);
+          await createOrder();
+          
+        } catch (err) {
+          toast.error('Payment succeeded but order save failed');
+          console.error(err);
+        }
+    };
     try {
       const handler = window.PaystackPop.setup({
         key: key,
@@ -80,12 +90,7 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
         currency: 'GHS',
         ref: `${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
         onClose: () => toast.info('Payment window closed'),
-        callback: (response) => {
-          toast.success(`Payment complete! Ref: ${response.reference}`)
-          setStep('success')
-          setPaymentSuccess(true)
-          onSubmitHandler()
-        },
+        callback: (response) => handlePaymentSuccess(response)
       })
       handler.openIframe()
     } catch (error) {
@@ -94,27 +99,21 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
     }
   }
 
-  const creatOrder = async()=>{
-    
-    if(!paymentSuccess) return;
+  const createOrder = async()=>{
     
     try {
-      const consult = await axios.post("http://localhost:5004/api/order/create-orderA", {formData});
+      const consult = await axios.post(`${backendUrl}/order/create-orderA`, {formData});
       if(consult.data.success){
-        toast.success("Service successfully booked!")
+        toast.success("Order placed successfully!");
+        setStep('success');
+        // Remove only paid items
       }
     } catch (error) {
-      toast.error("Unable to book.. try again")
-      console.log(error) 
+      toast.error("Order saved locally. Contact support with ref: ");
+      console.log(error);
     }
 
-    setPaymentSuccess(false);
-
   }
-
-  useEffect(()=>{
-    if(paymentSuccess) creatOrder();
-  },[paymentSuccess, step, setStep])
 
   const handleConfirmBooking = async (e) => {
     try {
@@ -404,7 +403,7 @@ export default function ServiceBookingModal({ service, isOpen, onClose }) {
                                         onClick={onClose}
                                         className='-mr-2 -mt-2 rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white'
                                     >
-                                        <X className='h-5 w-5' />
+                                        <X className='h-5 w-5' onClick={()=>setStep('details')} />
                                     </button>
                                     <motion.div
                                     initial={{ scale: 0 }}

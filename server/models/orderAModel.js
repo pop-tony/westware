@@ -1,11 +1,15 @@
 import mongoose from "mongoose";
 
 const ordersShema = new mongoose.Schema({
-    name: {type: String, required: true},
-    pname: {type: String, required: true},
+    customerName: {type: String, required: true},
+    itemName: {type: String, required: true},
+    address: {type: String, required: true},
     price: {type: String, required: true},
     phone: {type: String, required: true},
     email: {type: String, required: true},
+    quantity:{type: Number, required: true},
+    total:{type: Number, required: true},
+    paymentRef:{type: String, required: true},
     status: {type: String, default: "order made"},
 },{timestamps: true},)
 

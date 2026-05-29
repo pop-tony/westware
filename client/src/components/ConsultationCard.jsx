@@ -22,7 +22,7 @@ const ConsultationCard = () => {
     {
       icon: <Info className='h-5 w-5' />,
       title: 'Consultation Fee',
-      desc: 'GHS 400 - GHS 800 for 30-minute session with lead designer'
+      desc: 'GHS 100 for 30-minute session with consultant'
     },
     {
       icon: <Clock className='h-5 w-5' />,
@@ -82,18 +82,18 @@ const ConsultationCard = () => {
         items: [{
           id: 'consultation',
           name: 'Style Consultation',
-          price: 800,
+          price: 100,
           quantity: 1,
           category: 'Service'
         }],
-        total: 800,
+        total: 100,
         paymentRef: reference,
         status: 'paid',
         type: 'consultation',
         createdAt: new Date().toISOString()
       };
 
-      const res = await axios.post(`${backendUrl}/api/order/consult`, {orderData});
+      const res = await axios.post(`${backendUrl}/order/consult`, {orderData});
       if (res.data.success) {
         toast.success("Consultation booked successfully!")
         return true
@@ -144,7 +144,7 @@ const ConsultationCard = () => {
     const handler = window.PaystackPop.setup({
       key: key,
       email: formData.email,
-      amount: 80000, // GHS 800 in pesewas
+      amount: 10000, 
       currency: 'GHS',
       ref: `CONSULT_${Date.now()}_${Math.floor(Math.random() * 1000000)}`,
       metadata: {
@@ -267,7 +267,7 @@ const ConsultationCard = () => {
                             Book Your Consultation
                           </h3>
                           <p className='mt-1 text-sm text-zinc-600 dark:text-zinc-400'>
-                            GHS 800 • 30 minutes with lead designer
+                            GHS 100 • 30 minutes with consultant
                           </p>
                         </div>
                         <button
